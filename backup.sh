@@ -27,26 +27,14 @@ backup() {
   date=$(date "+%Y-%m-%dT%H:%M:%SZ")
   archive_name="backup-$date.tar.gz"
 
-  cmd_auth_part=""
-  if [[ ! -z $MONGODB_USER ]] && [[ ! -z $MONGODB_PASSWORD ]]
-  then
-    cmd_auth_part="--username=\"$MONGODB_USER\" --password=\"$MONGODB_PASSWORD\""
-  fi
-
-  cmd_db_part=""
-  if [[ ! -z $MONGODB_DB ]]
-  then
-    cmd_db_part="--db=\"$MONGODB_DB\""
-  fi
-
   cmd_oplog_part=""
   if [[ $MONGODB_OPLOG = "true" ]]
   then
     cmd_oplog_part="--oplog"
   fi
 
-  cmd="mongodump --host=\"$MONGODB_HOST\" --port=\"$MONGODB_PORT\" $cmd_auth_part $cmd_db_part $cmd_oplog_part --gzip --archive=$BACKUP_DIR/$archive_name"
-  echo "starting to backup MongoDB host=$MONGODB_HOST port=$MONGODB_PORT"
+  cmd="mongodump --uri=\"mongodb+srv://$MONGODB_USER:$MONGODB_PASSWORD@$MONGODB_HOST/$MONGODB_DB\" $cmd_oplog_part --gzip --archive=$BACKUP_DIR/$archive_name"
+  echo "starting to backup MongoDB host=$MONGODB_HOST"
   eval "$cmd"
 }
 
@@ -66,7 +54,7 @@ default_api_version = 2
 EOF
   fi
   echo "uploading backup archive to GCS bucket=$GCS_BUCKET"
-  gsutil cp $BACKUP_DIR/$archive_name $GCS_BUCKET
+  gsutil cp $BACKUP_DIR/$archive_name gs://$GCS_BUCKET/
 }
 
 send_slack_message() {
